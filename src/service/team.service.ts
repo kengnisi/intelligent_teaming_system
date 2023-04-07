@@ -18,6 +18,8 @@ import { getSafetyUser } from "../utils/SafetyUserUtils";
 import teamStatusEnum from "../common/emun/teamStatus";
 import redisLock from "../app/RedisLock";
 import { v1 as uuidv1 } from 'uuid';
+import { RequestMatchKey } from "../common/type/requestParam"
+import minDistance from "../utils/AlgorithmUtils2";
 class TeamService {
   /**
    * 添加队伍
@@ -228,7 +230,6 @@ class TeamService {
   }
 
   async getTeamListPage(ctx: Context, offset: number = 0, limit: number = 20) {
-    console.log(limit)
     if (offset == null || offset < 0 || limit == null || limit < 0) {
       return sendError(errorTypes.PARAMS_ERROR, ctx, "参数错误")
     }
@@ -589,6 +590,59 @@ class TeamService {
     return {
       teamInfo
     }
+  }
+
+  async getMatchTeam(ctx: Context, loginUser, searchKey: RequestMatchKey) {
+    console.log(searchKey[0])
+    const start = process.hrtime();
+    const teamList = await Team.findAll({
+      attributes: ['id', 'name', 'description'],
+      where: {
+        userId: {
+          [Op.ne]: loginUser.id
+        },
+        isDelete: 0
+      }
+    })
+    const end = process.hrtime(start);
+    console.log(`程序运行了 ${end[0]} 秒 ${end[1] / 1000000} 毫秒`);
+    const searchContext = [...loginUser.tags, ...searchKey as any].join("")
+    console.log("searchContext", searchContext)
+    let matchTeams = new Array()
+    for (const iterator of teamList) {
+      const name = iterator.name
+      if (name == null || name == "") {
+        continue
+      }
+      const distance = minDistance(name, searchContext)
+      if (distance == 1 && name.length == 1) {
+        continue
+      }
+      matchTeams.push({
+        distance,
+        teamInfo: iterator
+      })
+    }
+    matchTeams = matchTeams.sort((a, b) => {
+      return b.distance - a.distance
+    })
+    const teamIdList = matchTeams.map((team) => {
+      return team.teamInfo["id"]
+    })
+    const resTeamList = await this.getTeamByCondition(ctx, {
+      where: {
+        id: teamIdList
+      }
+    }, true)
+    if (typeof resTeamList === "boolean") {
+      return resTeamList
+    }
+    const finalUserList = []
+    for (const safeTeam of resTeamList) {
+      const index = teamIdList.indexOf(safeTeam.id)
+      finalUserList[index] = safeTeam
+    }
+    return finalUserList
   }
 }
 

@@ -1,4 +1,5 @@
 import Koa from "koa"
+const http = require("http")
 import errorHandler from "./error-handle"
 import useRoutes from "../router"
 import cors from "koa2-cors"
@@ -6,6 +7,7 @@ import bodyParser from "koa-bodyparser"
 import session from "koa-generic-session"
 import redisStore from "koa-redis"
 import db from './database';
+import WS from './webSocket'
 
 import config from './config'
 import { Server } from "http"
@@ -13,8 +15,8 @@ db()
 
 
 const app = new Koa()
-
-
+const server = http.createServer(app.callback())
+WS.init(server)
 // 配置session中间件
 app.keys = ['IOdhakw23792#'] // session 密钥
 app.use(session({
@@ -43,7 +45,7 @@ app.use(cors());
 
 
 const run = (port: string): Server => {
-  return app.listen(port, () => {
+  return server.listen(port, () => {
     console.log(`服务器在${config.APP_PORT}端口启动成功~`)
   });
 }

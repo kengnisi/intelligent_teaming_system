@@ -109,8 +109,9 @@ class UserController {
    * 获取用户匹配的用户
    */
   async matchUsers(ctx: Context) {
+    const searchKey = JSON.parse(ctx.query["searchKey"] as string)
     const loginUser = ctx["userInfo"]
-    const matchUsers = await userService.matchUsers(ctx, loginUser)
+    const matchUsers = await userService.matchUsers(ctx, loginUser, searchKey)
     resultUtils.successResult(ctx, matchUsers)
   }
 }

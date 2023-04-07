@@ -20,7 +20,7 @@ userRouter.post('/update', verifyAuth, updateUser)
 // @ts-ignore
 userRouter.get('/recommend', recommendUsers)
 // @ts-ignore
-userRouter.get('/match', verifyAuth, matchUsers)
+userRouter.get('/match', verifyAuth, verifyParams, matchUsers)
 
 
 userRouter.post("/test", async (ctx: Context) => {

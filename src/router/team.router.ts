@@ -1,6 +1,6 @@
 
 import Router from "koa-router";
-import { addTeam, updateTeam, getTeamById, getTeamList, getTeamListPage, joinTeam, quitTeam, getMyCreateTeam, getMyJoinTeam, deleteTeam, guanlian } from "../controller/team.comtroller";
+import { addTeam, updateTeam, getTeamById, getTeamList, getTeamListPage, joinTeam, quitTeam, getMyCreateTeam, getMyJoinTeam, deleteTeam, getMatchTeam, guanlian } from "../controller/team.comtroller";
 import { verifyAuth, verifyParams } from '../middleware/auth.middleware';
 const teamRouter = new Router({ prefix: '/team' })
 
@@ -12,6 +12,8 @@ teamRouter.get("/getTeam", verifyParams, getTeamById)
 teamRouter.get("/search", verifyParams, getTeamList)
 // 获取队伍
 teamRouter.get("/list/page", verifyParams, getTeamListPage)
+// @ts-ignore
+teamRouter.get("/list/match", verifyAuth, verifyParams, getMatchTeam)
 teamRouter.post("/join", verifyAuth, joinTeam)
 teamRouter.post("/quit", verifyAuth, quitTeam)
 teamRouter.post("/my/create", verifyAuth, getMyCreateTeam)

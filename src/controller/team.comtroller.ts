@@ -81,6 +81,7 @@ class TeamController {
   async getTeamList(ctx: Context) {
     // 小程序的参数会自动变为字符串后期要改
     const searchInfo = ctx.request.body
+    console.log("searchInfo", searchInfo)
     const res = await teamService.getTeamList(ctx, searchInfo)
     if (typeof res === "boolean") {
       return res
@@ -89,7 +90,7 @@ class TeamController {
   }
 
   /**
-   * 分页查找用户列表
+   * 分页查找队伍列表
    * @param ctx
    */
   async getTeamListPage(ctx: Context) {
@@ -186,7 +187,13 @@ class TeamController {
     resultUtils.successResult(ctx, res, "我所在的队伍")
 
   }
+  async getMatchTeam(ctx: Context) {
+    const searchKey = JSON.parse(ctx.query["searchKey"] as string)
+    const loginUser = ctx["userInfo"]
+    const matchTeam = await teamService.getMatchTeam(ctx, loginUser, searchKey)
+    resultUtils.successResult(ctx, matchTeam)
+  }
 
 
 }
-export const { addTeam, deleteTeam, updateTeam, getTeamById, getTeamList, getTeamListPage, joinTeam, quitTeam, getMyCreateTeam, getMyJoinTeam, guanlian } = new TeamController
+export const { addTeam, deleteTeam, updateTeam, getTeamById, getTeamList, getTeamListPage, joinTeam, quitTeam, getMyCreateTeam, getMyJoinTeam, getMatchTeam, guanlian } = new TeamController

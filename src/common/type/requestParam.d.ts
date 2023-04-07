@@ -1,3 +1,4 @@
+import { type } from "os";
 import teamStatusEnum from "../emun/teamStatus"
 type RequestAddTeam = {
   userId?: number;
@@ -25,4 +26,11 @@ type RequestJoinTeam = {
   teamId: number,
   password?: string
 }
-export { RequestAddTeam, RequestGetTeam, RequestJoinTeam }
+
+type RequestTeamMessage = {
+  teamId: number
+}
+type RequestMatchKey = {
+  searchKey: Array<string>
+}
+export { RequestAddTeam, RequestGetTeam, RequestJoinTeam, RequestTeamMessage, RequestMatchKey }

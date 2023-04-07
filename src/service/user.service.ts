@@ -9,6 +9,7 @@ import minDistance from "../utils/AlgorithmUtils";
 import user from "../model/user_model";
 import { Op } from "sequelize";
 import { userInfo } from "os";
+import { RequestMatchKey } from "../common/type/requestParam";
 
 class UserService {
   async createUser(openId: string) {
@@ -62,7 +63,8 @@ class UserService {
     return res
   }
 
-  async matchUsers(ctx, loginUser) {
+  async matchUsers(ctx, loginUser, searchKey: RequestMatchKey) {
+    console.log(searchKey[0])
     const start = process.hrtime();
     const userList = await User.findAll({
       attributes: ['id', 'tags'],
@@ -78,8 +80,7 @@ class UserService {
     })
     const end = process.hrtime(start);
     console.log(`程序运行了 ${end[0]} 秒 ${end[1] / 1000000} 毫秒`);
-    const loginUserTags = loginUser.tags
-
+    const loginUserTags = [...loginUser.tags, ...searchKey as any]
     let matchUsers = new Array()
     for (const iterator of userList) {
       const tags = iterator.tags

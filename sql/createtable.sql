@@ -33,3 +33,21 @@ create table tag
 
 create index idx_userId
     on tag (userId);
+
+
+-- 消息表
+create table message
+(
+    id         bigint auto_increment comment 'id'
+        primary key,
+    userId     bigint comment '用户id',
+		name varchar(256) DEFAULT NULL COMMENT '用户昵称',
+		avatarUrl varchar(1024) DEFAULT NULL COMMENT '用户头像',
+		
+    teamId     bigint comment '队伍id',
+		style int      default 0 not null comment '0 - 字符串，1 - emoj，2 - 图片， 3 - 文件',
+		createTime datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updateTime datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    message varchar(1024) not null COMMENT '信息内容',
+    isDelete   tinyint  default 0 not null comment '是否删除'
+) comment '消息';
