@@ -18,9 +18,6 @@ teamRouter.post("/join", verifyAuth, joinTeam)
 teamRouter.post("/quit", verifyAuth, quitTeam)
 teamRouter.post("/my/create", verifyAuth, getMyCreateTeam)
 teamRouter.post("/my/join", verifyAuth, getMyJoinTeam)
-
-
-
 teamRouter.post("/delete", verifyAuth, deleteTeam)
 teamRouter.get("/test", verifyAuth, guanlian)
 

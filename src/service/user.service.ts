@@ -9,7 +9,8 @@ import minDistance from "../utils/AlgorithmUtils";
 import user from "../model/user_model";
 import { Op } from "sequelize";
 import { userInfo } from "os";
-import { RequestMatchKey } from "../common/type/requestParam";
+import { RequestMatchKey, RequestChangeUserTags } from "../common/type/requestParam";
+import Tag from "../model/tagList_model";
 
 class UserService {
   async createUser(openId: string) {
@@ -63,7 +64,7 @@ class UserService {
     return res
   }
 
-  async matchUsers(ctx, loginUser, searchKey: RequestMatchKey) {
+  async matchUsers(ctx: Context, loginUser, searchKey: RequestMatchKey) {
     console.log(searchKey[0])
     const start = process.hrtime();
     const userList = await User.findAll({
@@ -117,6 +118,31 @@ class UserService {
       finalUserList[index] = safeUser
     }
     return finalUserList
+  }
+
+  async changeTags(ctx: Context, loginUser, tagsList: RequestChangeUserTags) {
+    // const tags = await Tag.findAll({
+    //   attributes: ['tagName', 'isParent'],
+    //   where: {
+    //     id: tagsList,
+    //     isDelete: {
+    //       [Op.eq]: 0
+    //     }
+    //   }
+    // })
+    // const resTags = tags.map(item => {
+    //   if (item.isParent == 0) {
+    //     return item.tagName
+    //   }
+    // }).filter(item => {
+    //   return item != null
+    // })
+    const res = await User.update({ tags: JSON.stringify(tagsList) }, {
+      where: {
+        id: loginUser.id
+      }
+    });
+    return res
   }
 }
 

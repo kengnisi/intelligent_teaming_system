@@ -9,6 +9,7 @@ import { getSafetyUser } from '../utils/SafetyUserUtils';
 import user from '../model/user_model';
 import { editAttr } from '../service/type/serviceType';
 import { sendError } from '../utils/sendError';
+import { RequestChangeUserTags } from '../common/type/requestParam';
 
 class UserController {
 
@@ -72,7 +73,7 @@ class UserController {
    */
   async userSearchBytags(ctx: Context, next: Next) {
     const tags: string = ctx.query.tags as string
-
+    console.log(tags)
     const res = await userService.getUserByTags(JSON.parse(tags))
     resultUtils.successResult(ctx, res)
   }
@@ -114,5 +115,15 @@ class UserController {
     const matchUsers = await userService.matchUsers(ctx, loginUser, searchKey)
     resultUtils.successResult(ctx, matchUsers)
   }
+  /**
+   * 
+   * @param ctx 修改用户标签
+   */
+  async changeTags(ctx: Context) {
+    const tagsList = ctx.request.body["tagsList"] as RequestChangeUserTags
+    const loginUser = ctx["userInfo"]
+    const matchUsers = await userService.changeTags(ctx, loginUser, tagsList)
+    resultUtils.successResult(ctx, matchUsers)
+  }
 }
-export const { userLogin, userSearchBytags, getCurrentUser, updateUser, recommendUsers, matchUsers } = new UserController
+export const { userLogin, userSearchBytags, getCurrentUser, updateUser, recommendUsers, matchUsers, changeTags } = new UserController

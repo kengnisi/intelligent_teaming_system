@@ -33,4 +33,13 @@ type RequestTeamMessage = {
 type RequestMatchKey = {
   searchKey: Array<string>
 }
-export { RequestAddTeam, RequestGetTeam, RequestJoinTeam, RequestTeamMessage, RequestMatchKey }
+type RequestCreateTag = {
+  tagName: string
+  userId?: number
+  parentId: number
+  isParent: number
+}
+type RequestChangeUserTags = {
+  tagIdList: Array<string>
+}
+export { RequestAddTeam, RequestGetTeam, RequestJoinTeam, RequestTeamMessage, RequestMatchKey, RequestCreateTag, RequestChangeUserTags }

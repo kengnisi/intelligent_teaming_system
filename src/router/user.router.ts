@@ -7,7 +7,8 @@ import {
   getCurrentUser,
   updateUser,
   recommendUsers,
-  matchUsers
+  matchUsers,
+  changeTags
 } from '../controller/user.controller'
 import { verifyLogin, verifyAuth, verifyParams } from '../middleware/auth.middleware'
 const userRouter = new Router({ prefix: '/user' })
@@ -21,6 +22,8 @@ userRouter.post('/update', verifyAuth, updateUser)
 userRouter.get('/recommend', recommendUsers)
 // @ts-ignore
 userRouter.get('/match', verifyAuth, verifyParams, matchUsers)
+// @ts-ignore
+userRouter.post('/changeTags', verifyAuth, verifyParams, changeTags)
 
 
 userRouter.post("/test", async (ctx: Context) => {
