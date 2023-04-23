@@ -9,11 +9,11 @@ teamRouter.post("/update", verifyAuth, updateTeam)
 // 根据id获取队伍
 teamRouter.get("/getTeam", verifyParams, getTeamById)
 // 搜索队伍
-teamRouter.get("/search", verifyParams, getTeamList)
+teamRouter.post("/search", verifyParams, getTeamList)
 // 获取队伍
 teamRouter.get("/list/page", verifyParams, getTeamListPage)
 // @ts-ignore
-teamRouter.get("/list/match", verifyAuth, verifyParams, getMatchTeam)
+teamRouter.get("/list/match", verifyAuth, getMatchTeam)
 teamRouter.post("/join", verifyAuth, joinTeam)
 teamRouter.post("/quit", verifyAuth, quitTeam)
 teamRouter.post("/my/create", verifyAuth, getMyCreateTeam)

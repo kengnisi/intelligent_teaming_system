@@ -199,10 +199,17 @@ class TeamService {
           ]
           continue
         }
+        if (key == "maxNum") {
+          searchCondition[key] = {
+            [Op.lte]: condition[key]
+          }
+          continue
+        }
         if (key == "expireTime") {
           searchCondition[key] = {
-            [Op.gt]: condition[key]
+            [Op.gt]: new Date(condition[key])
           }
+          continue
         }
         searchCondition[key] = condition[key]
       }
@@ -225,12 +232,12 @@ class TeamService {
       return safeTeamList
     }
     return {
-      teamList: safeTeamList
+      teamList: safeTeamList.safeTeamList
     }
   }
 
-  async getTeamListPage(ctx: Context, offset: number = 0, limit: number = 20) {
-    if (offset == null || offset < 0 || limit == null || limit < 0) {
+  async getTeamListPage(ctx: Context, page: number = 1, limit: number = 15) {
+    if (page == null || page < 1 || limit == null || limit < 0) {
       return sendError(errorTypes.PARAMS_ERROR, ctx, "参数错误")
     }
     const searchCondition = {
@@ -241,12 +248,17 @@ class TeamService {
         expireTime: {
           [Op.gt]: new Date(),
         }
-      },
-      // limit: limit,
-      // offset: offset
+      }
     }
     const res = await this.getTeamByCondition(ctx, searchCondition, true)
-    return res
+    if (typeof res == "boolean") {
+      return sendError(errorTypes.PARAMS_ERROR, ctx, "队伍Id错误")
+    }
+    const resList = res["safeTeamList"].slice((page - 1) * limit, (page - 1) * limit + limit)
+    return {
+      safeTeamList: resList,
+      count: res["safeTeamList"].length
+    }
   }
 
   async joinTeam(ctx: Context, joinInfo: RequestJoinTeam, loginUser: safeUserInfo) {
@@ -362,6 +374,7 @@ class TeamService {
 
   async deleteTeam(ctx: Context, deleteId: number, loginUser: safeUserInfo) {
     const team = await this.getTeamById(ctx, deleteId)
+    console.log("team", team)
     if (typeof team === "boolean") {
       return team
     }
@@ -419,13 +432,14 @@ class TeamService {
             const userTeamList = await user_team.findAll({
               where: {
                 teamId: quitTeamId,
-                isDelate: 0
+                isDelete: 0
               },
               limit: 2,
               order: [[
                 'id', 'ASC'
               ]]
             })
+            console.log("userTeamList", userTeamList)
             if (userTeamList == null || userTeamList.length <= 1) {
               return sendError(errorTypes.SYSTEM_ERROR, ctx)
             }
@@ -443,6 +457,7 @@ class TeamService {
             }
           }
         }
+
         const res = await user_team.update({ isDelete: 1 }, {
           where: {
             teamId: quitTeamId,
@@ -450,6 +465,7 @@ class TeamService {
           },
           transaction: t
         })
+        console.log("==============", res)
         if (res[0] == 0) {
           return sendError(errorTypes.SYSTEM_ERROR, ctx, "退出失败")
         }
@@ -504,6 +520,10 @@ class TeamService {
   }
   /**
    * 根据搜索条件搜索队伍
+   * @param ctx 
+   * @param condition 
+   * @param isDelete 
+   * @returns 
    */
   async getTeamByCondition(ctx: Context, condition: object, isDelete: boolean) {
     condition["where"]["isDelete"] = isDelete ? 0 : [0, 1],
@@ -511,7 +531,7 @@ class TeamService {
 
     Team.hasMany(user_team, { foreignKey: "teamId" })
     user_team.belongsTo(user, { foreignKey: "userId" })
-    const teamList = await Team.findAll({
+    const { rows, count } = await Team.findAndCountAll({
       ...condition,
       include: [{
         model: user_team,
@@ -524,14 +544,16 @@ class TeamService {
             isDelete: 0
           }
         }]
-      }]
+      }],
+      subQuery: false
     })
-    if (teamList == null) {
+    if (rows == null) {
       return sendError(errorTypes.NULL_ERROR, ctx, "队伍不存在")
     }
+    console.log("条件搜索中", rows.length)
     // 返回的安全数组列表信息,添加创建人，成员信息
     const safeTeamList: Array<safeTeamInfo> = []
-    for (const iterator of teamList) {
+    for (const iterator of rows) {
       const createUser = await user.findOne({
         where: {
           id: iterator.userId
@@ -560,10 +582,10 @@ class TeamService {
       }
       safeTeamList.push(safeTeam)
     }
-    if (teamList == null) {
+    if (rows == null) {
       return sendError(errorTypes.PARAMS_ERROR, ctx, "参数错误")
     }
-    return safeTeamList
+    return { safeTeamList, count }
   }
 
   /**
@@ -576,9 +598,10 @@ class TeamService {
     if (teamId < 0 || teamId == null) {
       return sendError(errorTypes.PARAMS_ERROR, ctx, "队伍Id错误")
     }
+    console.log("teamById", teamId)
     const teamInfo = await Team.findOne({
       where: {
-        id: `${teamId}`,
+        id: teamId,
         isDelete: {
           [Op.ne]: 1
         }
@@ -592,7 +615,16 @@ class TeamService {
     }
   }
 
-  async getMatchTeam(ctx: Context, loginUser, searchKey: RequestMatchKey) {
+  /**
+   * 获取匹配队伍
+   * @param ctx 
+   * @param loginUser 
+   * @param searchKey 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
+  async getMatchTeam(ctx: Context, loginUser, searchKey: RequestMatchKey, page: number = 1, limit: number = 15) {
     console.log(searchKey[0])
     const start = process.hrtime();
     const teamList = await Team.findAll({
@@ -600,6 +632,9 @@ class TeamService {
       where: {
         userId: {
           [Op.ne]: loginUser.id
+        },
+        expireTime: {
+          [Op.gt]: new Date()
         },
         isDelete: 0
       }
@@ -615,7 +650,7 @@ class TeamService {
         continue
       }
       const distance = minDistance(name, searchContext)
-      if (distance == 1 && name.length == 1) {
+      if (distance == 0) {
         continue
       }
       matchTeams.push({
@@ -629,20 +664,25 @@ class TeamService {
     const teamIdList = matchTeams.map((team) => {
       return team.teamInfo["id"]
     })
+    console.log(teamIdList)
     const resTeamList = await this.getTeamByCondition(ctx, {
       where: {
-        id: teamIdList
+        id: {
+          [Op.in]: teamIdList
+        }
       }
     }, true)
     if (typeof resTeamList === "boolean") {
       return resTeamList
     }
-    const finalUserList = []
-    for (const safeTeam of resTeamList) {
+    const finalTeamList = []
+    // @ts-ignore
+    for (const safeTeam of resTeamList.safeTeamList) {
       const index = teamIdList.indexOf(safeTeam.id)
-      finalUserList[index] = safeTeam
+      finalTeamList[index] = safeTeam
     }
-    return finalUserList
+    const resList = finalTeamList.slice((page - 1) * limit, (page - 1) * limit + limit)
+    return { resList, count: finalTeamList.length }
   }
 }
 

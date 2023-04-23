@@ -14,7 +14,7 @@ import Tag from "../model/tagList_model";
 
 class UserService {
   async createUser(openId: string) {
-    const res = await User.create({ openId: `${openId}` })
+    const res = await User.create({ openId: `${openId}`, tags: [] })
     return res
   }
   async getUserByOpenId(openId: string) {
@@ -25,10 +25,18 @@ class UserService {
     const res = await User.findOne({ where: { id: `${id}` } })
     return res
   }
-  async getUserByTags(tags: Array<string>) {
-    const res: Array<User> = await User.findAll()
-    const userList = res.filter((user) => {
-      if (user.tags == null) {
+  async getUserByTags(tags: Array<string>, page: number = 1, limit: number = 15) {
+    console.log(page, limit)
+    const { rows, count } = await User.findAndCountAll(
+      {
+        attributes: { exclude: ['isDelete', 'updateTime'] },
+        where: {
+          isDelete: 0
+        }
+      }
+    )
+    const userList = rows.filter((user) => {
+      if (user.tags == null || user.tags == "[]") {
         return false
       }
       const tagsList = JSON.parse(user.tags)
@@ -38,10 +46,12 @@ class UserService {
         }
       }
       return false
-    }).map(user => {
-      return getSafetyUser(user)
     })
-    return userList
+    const resList = userList.slice((page - 1) * limit, (page - 1) * limit + limit)
+    resList.forEach((item) => {
+      item.tags = JSON.parse(item.tags)
+    })
+    return { resList, count: userList.length }
   }
   async updateUser(ctx: Context, editAttr: editAttr, userInfo: safeUserInfo) {
     const userId = userInfo.id
@@ -64,9 +74,10 @@ class UserService {
     return res
   }
 
-  async matchUsers(ctx: Context, loginUser, searchKey: RequestMatchKey) {
+  async matchUsers(ctx: Context, loginUser, searchKey: RequestMatchKey, page: number = 1, limit: number = 15) {
     console.log(searchKey[0])
-    const start = process.hrtime();
+    // const start = process.hrtime();
+    // 1.获取所有用户
     const userList = await User.findAll({
       attributes: ['id', 'tags'],
       where: {
@@ -79,9 +90,11 @@ class UserService {
         }
       }
     })
-    const end = process.hrtime(start);
-    console.log(`程序运行了 ${end[0]} 秒 ${end[1] / 1000000} 毫秒`);
+    // const end = process.hrtime(start);
+    // console.log(`程序运行了 ${end[0]} 秒 ${end[1] / 1000000} 毫秒`);
+    // 2.整理用户匹配标签
     const loginUserTags = [...loginUser.tags, ...searchKey as any]
+    // 3.计算匹配程度
     let matchUsers = new Array()
     for (const iterator of userList) {
       const tags = iterator.tags
@@ -98,26 +111,36 @@ class UserService {
         userInfo: iterator
       })
     }
+    // 4.排序
     matchUsers = matchUsers.sort((a, b) => {
       return a.distance - b.distance
     })
     const userIdList = matchUsers.map((user) => {
       return user.userInfo["id"]
     })
-    const resUserList = await User.findAll({
+    // 5.获取匹配用户
+    const { rows, count } = await User.findAndCountAll({
+      attributes: { exclude: ['isDelete', 'updateTime'] },
       where: {
-        id: userIdList
+        id: userIdList,
+        isDelete: 0
       }
     })
-    const safeUserList = resUserList.map(userItem => {
-      return getSafetyUser(userItem)
+    rows.forEach((item) => {
+      item.tags = JSON.parse(item.tags)
     })
+    // const safeUserList = rows.map(userItem => {
+    //   return getSafetyUser(userItem)
+    // })
+    console.log(userIdList)
     const finalUserList = []
-    for (const safeUser of safeUserList) {
+    // 6.重新排序
+    for (const safeUser of rows) {
       const index = userIdList.indexOf(safeUser.id)
       finalUserList[index] = safeUser
     }
-    return finalUserList
+    const resList = finalUserList.slice((page - 1) * limit, (page - 1) * limit + limit)
+    return { finalUserList: resList, count }
   }
 
   async changeTags(ctx: Context, loginUser, tagsList: RequestChangeUserTags) {

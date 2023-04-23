@@ -57,7 +57,7 @@ create table parmessage
 (
     id         bigint auto_increment comment 'id'
         primary key,
-    seadUserId     bigint comment '发送方用户id',
+    sendUserId     bigint comment '发送方用户id',
         name varchar(256) DEFAULT NULL COMMENT '用户昵称',
         avatarUrl varchar(1024) DEFAULT NULL COMMENT '用户头像',
         
@@ -68,3 +68,30 @@ create table parmessage
     message varchar(1024) not null COMMENT '信息内容',
     isDelete   tinyint  default 0 not null comment '是否删除'
 ) comment '消息';
+create table administrators
+(
+    username     varchar(256) null comment '用户昵称',
+    id           bigint auto_increment comment 'id'
+        primary key,
+    userAccount  varchar(256) null comment '账号',
+    avatarUrl    varchar(1024) null comment '用户头像',
+    gender       tinyint null comment '性别',
+    userPassword varchar(512)       not null comment '密码',
+    phone        varchar(128) null comment '电话',
+    email        varchar(512) null comment '邮箱',
+    userStatus   int      default 0 not null comment '状态 0 - 正常',
+    createTime   datetime default CURRENT_TIMESTAMP null comment '创建时间',
+    updateTime   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    isDelete     tinyint  default 0 not null comment '是否删除'
+) comment '管理员';
+
+create table friend
+(
+    id           bigint auto_increment comment 'id'
+        primary key,
+    userId     bigint comment '用户id',
+    friendId     bigint comment '好友id',
+    createTime   datetime default CURRENT_TIMESTAMP null comment '创建时间',
+    updateTime   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
+    isDelete     tinyint  default 0 not null comment '是否删除'
+) comment '用户互关表';

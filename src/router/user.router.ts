@@ -8,13 +8,15 @@ import {
   updateUser,
   recommendUsers,
   matchUsers,
-  changeTags
+  changeTags,
+  userSearchById
 } from '../controller/user.controller'
 import { verifyLogin, verifyAuth, verifyParams } from '../middleware/auth.middleware'
 const userRouter = new Router({ prefix: '/user' })
 import { Context } from "vm";
 
 userRouter.post('/login', verifyLogin, userLogin)
+userRouter.get('/search/id', verifyParams, userSearchById)
 userRouter.get('/search/tags', verifyParams, userSearchBytags)
 userRouter.get('/current', verifyAuth, getCurrentUser)
 userRouter.post('/update', verifyAuth, updateUser)

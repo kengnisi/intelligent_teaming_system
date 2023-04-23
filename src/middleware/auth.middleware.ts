@@ -33,6 +33,14 @@ export const verifyAuth = async (ctx: Context, next: Next) => {
   ctx.userInfo = userInfo
   await next();
 }
+export const verifyAdminAuth = async (ctx: Context, next: Next) => {
+  const adminInfo = ctx.session["adminInfo"]
+  if (!adminInfo) {
+    return sendError(errorTypes.NOT_LOGIN, ctx, "请先登陆")
+  }
+  ctx.userInfo = adminInfo
+  await next();
+}
 
 /**
  * 

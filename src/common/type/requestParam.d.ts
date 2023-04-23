@@ -7,7 +7,7 @@ type RequestAddTeam = {
   password?: string
   maxNum: number
   status: number
-  expireTime: Date;
+  expireTime: number;
 }
 
 type RequestGetTeam = {
@@ -19,7 +19,7 @@ type RequestGetTeam = {
   searchText?: string
   maxNum?: number
   status?: teamStatusEnum,
-  expireTime?: Date;
+  expireTime?: number;
 }
 
 type RequestJoinTeam = {
@@ -36,10 +36,35 @@ type RequestMatchKey = {
 type RequestCreateTag = {
   tagName: string
   userId?: number
-  parentId: number
+  parentId?: number
   isParent: number
+}
+
+type RequestDeletePTag = {
+  parentId: number
+}
+// 删除子标签
+type RequestDeleteCTag = {
+  parentId: number
+  children: number
+}
+type RequestUpdateTag = {
+  id: number
+  text: string
 }
 type RequestChangeUserTags = {
   tagIdList: Array<string>
 }
-export { RequestAddTeam, RequestGetTeam, RequestJoinTeam, RequestTeamMessage, RequestMatchKey, RequestCreateTag, RequestChangeUserTags }
+type RequestAdminInfo = {
+  account: string,
+  password: string
+}
+type RequestPageUser = {
+  limit: number,
+  page: number,
+  searchKey: string
+}
+type RequestDeleteUser = {
+  idList: Array<number>
+}
+export { RequestAddTeam, RequestGetTeam, RequestJoinTeam, RequestTeamMessage, RequestMatchKey, RequestCreateTag, RequestChangeUserTags, RequestAdminInfo, RequestPageUser, RequestDeleteUser, RequestDeleteCTag, RequestDeletePTag, RequestUpdateTag }

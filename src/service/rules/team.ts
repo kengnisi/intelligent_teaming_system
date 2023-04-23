@@ -34,11 +34,11 @@ export const teamRule: Rules = {
     enum: [0, 1, 2]
   },
   expireTime: {
-    type: 'date',
+    type: 'number',
     required: true,
     asyncValidator: (rule, value) => {
       return new Promise((resolve, reject) => {
-        if (value < new Date) {
+        if (new Date(value) < new Date()) {
           reject('截止时间错误');  // reject with error message
         } else {
           resolve();
@@ -92,7 +92,7 @@ export const searchTeamRules: Rules = {
     message: "队伍类型错误"
   },
   expireTime: {
-    type: 'date',
+    type: 'number',
     message: "时间格式错误"
   }
 }

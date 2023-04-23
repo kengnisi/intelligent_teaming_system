@@ -5,14 +5,12 @@ import errorTypes from '../common/constant/error-types';
 import teamService from '../service/team.service';
 import { RequestAddTeam, RequestJoinTeam } from '../common/type/requestParam';
 import resultUtils from '../utils/resultUtils';
-import { safeUserInfo } from '../common/type/responseResultType';
 import { editTeam } from '../service/type/serviceType';
-import { Rules } from 'async-validator'
 import Team from '../model/team_model';
 import user from '../model/user_model';
 import user_team from '../model/userTeam_model';
 import console from 'console';
-import { Op } from 'sequelize';
+import paginate from '../utils/paginate';
 
 
 class TeamController {
@@ -81,6 +79,8 @@ class TeamController {
   async getTeamList(ctx: Context) {
     // 小程序的参数会自动变为字符串后期要改
     const searchInfo = ctx.request.body
+    console.log(ctx.request.body);
+
     console.log("searchInfo", searchInfo)
     const res = await teamService.getTeamList(ctx, searchInfo)
     if (typeof res === "boolean") {
@@ -94,15 +94,17 @@ class TeamController {
    * @param ctx
    */
   async getTeamListPage(ctx: Context) {
-    const { limit, offset } = ctx.query
-    if (offset == null || Number(offset) < 0 || limit == null || Number(limit) < 0) {
+    const { page, limit } = ctx.query
+    if (page == null || Number(page) < 1 || limit == null || Number(limit) < 0) {
       return sendError(errorTypes.PARAMS_ERROR, ctx, "参数错误")
     }
-    const res = await teamService.getTeamListPage(ctx, Number(offset), Number(limit))
+    const res = await teamService.getTeamListPage(ctx, Number(page), Number(limit))
     if (typeof res === "boolean") {
       return res
     }
     resultUtils.successResult(ctx, res, "获取列表成功")
+    // @ts-ignore
+    resultUtils.successResult(ctx, paginate(res.safeTeamList, Number(page), res.count, Number(limit)), "获取用户成功")
   }
 
   async joinTeam(ctx: Context) {
@@ -160,6 +162,7 @@ class TeamController {
 
   async quitTeam(ctx: Context) {
     const teamId = ctx.request.body["teamId"]
+    console.log("quitTeam", teamId)
     if (teamId == null || teamId < 0) {
       return sendError(errorTypes.PARAMS_ERROR, ctx, "参数错误")
     }
@@ -189,9 +192,12 @@ class TeamController {
   }
   async getMatchTeam(ctx: Context) {
     const searchKey = JSON.parse(ctx.query["searchKey"] as string)
+    const page = ctx.query.page
+    const limit = ctx.query.limit
     const loginUser = ctx["userInfo"]
-    const matchTeam = await teamService.getMatchTeam(ctx, loginUser, searchKey)
-    resultUtils.successResult(ctx, matchTeam)
+    const matchTeam = await teamService.getMatchTeam(ctx, loginUser, searchKey, Number(page), Number(limit))
+    //@ts-ignore
+    resultUtils.successResult(ctx, paginate(matchTeam.resList, Number(page), matchTeam.count, Number(limit)), "获取用户成功")
   }
 
 

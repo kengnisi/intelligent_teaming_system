@@ -10,6 +10,7 @@ import user from '../model/user_model';
 import { editAttr } from '../service/type/serviceType';
 import { sendError } from '../utils/sendError';
 import { RequestChangeUserTags } from '../common/type/requestParam';
+import paginate from '../utils/paginate';
 
 class UserController {
 
@@ -73,9 +74,10 @@ class UserController {
    */
   async userSearchBytags(ctx: Context, next: Next) {
     const tags: string = ctx.query.tags as string
-    console.log(tags)
-    const res = await userService.getUserByTags(JSON.parse(tags))
-    resultUtils.successResult(ctx, res)
+    const page = ctx.query.page
+    const limit = ctx.query.limit
+    const { resList, count } = await userService.getUserByTags(JSON.parse(tags), Number(page), Number(limit))
+    resultUtils.successResult(ctx, paginate(resList, Number(page), count, Number(limit)), "根据标签搜索用户成功")
   }
 
   /**
@@ -99,21 +101,36 @@ class UserController {
    * @author hly
    */
   async recommendUsers(ctx: Context) {
-    const recommendUserList = await user.findAll({ offset: 0, limit: 20 })
-    const userList = recommendUserList.map(userItem => {
-      return getSafetyUser(userItem)
+    const { page, limit } = ctx.query
+    const { rows, count } = await user.findAndCountAll({
+      attributes: { exclude: ['isDelete', 'updateTime'] },
+      limit: Number(limit),
+      offset: (Number(page) - 1) * Number(limit),
+      where: {
+        isDelete: 0
+      }
     })
-    resultUtils.successResult(ctx, userList, "获取用户成功")
+    // const userList = rows.map(userItem => {
+    //   return getSafetyUser(userItem)
+    // })
+    rows.forEach((item) => {
+      item.tags = JSON.parse(item.tags)
+    })
+    resultUtils.successResult(ctx, paginate(rows, Number(page), count, Number(limit)), "获取用户成功")
   }
 
   /**
    * 获取用户匹配的用户
    */
   async matchUsers(ctx: Context) {
-    const searchKey = JSON.parse(ctx.query["searchKey"] as string)
+    const searchKey = JSON.parse(ctx.query.searchKey as string)
+    const page = ctx.query.page
+    const limit = ctx.query.limit
+    console.log(ctx.query)
+    console.log(page, limit)
     const loginUser = ctx["userInfo"]
-    const matchUsers = await userService.matchUsers(ctx, loginUser, searchKey)
-    resultUtils.successResult(ctx, matchUsers)
+    const { finalUserList, count } = await userService.matchUsers(ctx, loginUser, searchKey, Number(page), Number(limit))
+    resultUtils.successResult(ctx, paginate(finalUserList, Number(page), count, Number(limit)), "获取匹配用户成功")
   }
   /**
    * 
@@ -125,5 +142,18 @@ class UserController {
     const matchUsers = await userService.changeTags(ctx, loginUser, tagsList)
     resultUtils.successResult(ctx, matchUsers)
   }
+
+  async userSearchById(ctx: Context) {
+    const id = ctx.query.id
+    const userInfo = await user.findOne({
+      attributes: { exclude: ['isDelete', 'updateTime', 'userRole'] },
+      where: {
+        id,
+        isDelete: 0
+      }
+    })
+    userInfo.tags = JSON.parse(userInfo.tags)
+    resultUtils.successResult(ctx, userInfo, "获取用户信息成功")
+  }
 }
-export const { userLogin, userSearchBytags, getCurrentUser, updateUser, recommendUsers, matchUsers, changeTags } = new UserController
+export const { userLogin, userSearchBytags, getCurrentUser, updateUser, recommendUsers, matchUsers, changeTags, userSearchById } = new UserController
