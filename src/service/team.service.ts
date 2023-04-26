@@ -162,6 +162,7 @@ class TeamService {
     // 搜索条件未处理
     const condition = res.data
     // 搜索条件结果
+    console.log()
     const searchCondition = {}
     // 处理搜索条件
     for (const key in condition) {
@@ -207,14 +208,18 @@ class TeamService {
         }
         if (key == "expireTime") {
           searchCondition[key] = {
-            [Op.gt]: new Date(condition[key])
+            [Op.and]: {
+              [Op.lt]: new Date(condition[key]),
+              [Op.gt]: new Date()
+            }
+
           }
           continue
         }
         searchCondition[key] = condition[key]
       }
     }
-    if (!searchCondition["status"]) {
+    if (searchCondition["status"] != 0 && searchCondition["status"] != 2) {
       searchCondition["status"] = { [Op.ne]: 1 }
     }
     if (!searchCondition["expireTime"]) {
@@ -232,22 +237,27 @@ class TeamService {
       return safeTeamList
     }
     return {
-      teamList: safeTeamList.safeTeamList
+      teamList: safeTeamList.safeTeamList,
+      count: safeTeamList.count
     }
   }
 
-  async getTeamListPage(ctx: Context, page: number = 1, limit: number = 15) {
+  async getTeamListPage(ctx: Context, page: number = 1, limit: number = 15,) {
     if (page == null || page < 1 || limit == null || limit < 0) {
       return sendError(errorTypes.PARAMS_ERROR, ctx, "参数错误")
     }
     const searchCondition = {
       where: {
-        status: {
-          [Op.ne]: 1,
-        },
         expireTime: {
           [Op.gt]: new Date(),
         }
+      }
+    }
+    const currentLogin = ctx.session["adminInfo"]
+    console.log("adminInfo", ctx.adminInfo)
+    if (currentLogin == undefined) {
+      searchCondition.where["status"] = {
+        [Op.ne]: 1,
       }
     }
     const res = await this.getTeamByCondition(ctx, searchCondition, true)
@@ -525,7 +535,7 @@ class TeamService {
    * @param isDelete 
    * @returns 
    */
-  async getTeamByCondition(ctx: Context, condition: object, isDelete: boolean) {
+  async getTeamByCondition(ctx: Context, condition: object, isDelete: boolean = false) {
     condition["where"]["isDelete"] = isDelete ? 0 : [0, 1],
       console.log(condition);
 
@@ -550,7 +560,7 @@ class TeamService {
     if (rows == null) {
       return sendError(errorTypes.NULL_ERROR, ctx, "队伍不存在")
     }
-    console.log("条件搜索中", rows.length)
+    // console.log("条件搜索中", rows.length)
     // 返回的安全数组列表信息,添加创建人，成员信息
     const safeTeamList: Array<safeTeamInfo> = []
     for (const iterator of rows) {

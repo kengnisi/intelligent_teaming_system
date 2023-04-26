@@ -11,6 +11,7 @@ import { editAttr } from '../service/type/serviceType';
 import { sendError } from '../utils/sendError';
 import { RequestChangeUserTags } from '../common/type/requestParam';
 import paginate from '../utils/paginate';
+import { Op } from 'sequelize';
 
 class UserController {
 
@@ -23,11 +24,13 @@ class UserController {
    */
   async userLogin(ctx: Context, next: Next) {
     // 1.发送请求，获取openId等信息
+    // @ts-ignore
+    const { code, avatarUrl, username } = ctx.request.body
     const res = await axios.get('https://api.weixin.qq.com/sns/jscode2session?', {
       params: {
         appid: config.APP_ID,
         secret: config.APP_SECRET,
-        js_code: ctx["loginCode"],
+        js_code: code,
         grant_type: 'authorization_code'
       }
     })
@@ -39,10 +42,11 @@ class UserController {
     }
     const openId = res.data.openid
     // 3.判断用户是否存在的
+    console.log("加密openId", md5password(openId))
     let userInfo = await userService.getUserByOpenId(md5password(openId));
     // 4.若不存在，则进行注册
     if (!userInfo) {
-      userInfo = await userService.createUser(md5password(openId))
+      userInfo = await userService.createUser(md5password(openId), avatarUrl, username)
       if (!userInfo) {
         const error = new Error(errorTypes.SYSTEM_ERROR);
         return ctx.app.emit('error', error, ctx, "注册失败");
@@ -142,7 +146,10 @@ class UserController {
     const matchUsers = await userService.changeTags(ctx, loginUser, tagsList)
     resultUtils.successResult(ctx, matchUsers)
   }
-
+  /**
+   * 根据id获取用户信息
+   * @param ctx 
+   */
   async userSearchById(ctx: Context) {
     const id = ctx.query.id
     const userInfo = await user.findOne({
@@ -155,5 +162,26 @@ class UserController {
     userInfo.tags = JSON.parse(userInfo.tags)
     resultUtils.successResult(ctx, userInfo, "获取用户信息成功")
   }
+
+  async userSearchByKey(ctx: Context) {
+    const searchKey = ctx.query['searchKey']
+    const page = ctx.query.page
+    const limit = ctx.query.limit
+    console.log(searchKey)
+    const { rows, count } = await user.findAndCountAll({
+      limit: Number(limit),
+      offset: (Number(page) - 1) * Number(limit),
+      where: {
+        profile: {
+          [Op.substring]: searchKey,
+        },
+        isDelete: 0
+      }
+    })
+    rows.forEach((item) => {
+      item.tags = JSON.parse(item.tags)
+    })
+    resultUtils.successResult(ctx, paginate(rows, Number(page), count, Number(limit)), "搜索成功")
+  }
 }
-export const { userLogin, userSearchBytags, getCurrentUser, updateUser, recommendUsers, matchUsers, changeTags, userSearchById } = new UserController
+export const { userLogin, userSearchBytags, getCurrentUser, updateUser, recommendUsers, matchUsers, changeTags, userSearchById, userSearchByKey } = new UserController

@@ -13,8 +13,9 @@ import { RequestMatchKey, RequestChangeUserTags } from "../common/type/requestPa
 import Tag from "../model/tagList_model";
 
 class UserService {
-  async createUser(openId: string) {
-    const res = await User.create({ openId: `${openId}`, tags: [] })
+  async createUser(openId: string, avatarUrl: string, username: string) {
+    console.log("注册", avatarUrl, username)
+    const res = await User.create({ openId: `${openId}`, tags: JSON.stringify([]), avatarUrl, username })
     return res
   }
   async getUserByOpenId(openId: string) {
@@ -56,14 +57,18 @@ class UserService {
   async updateUser(ctx: Context, editAttr: editAttr, userInfo: safeUserInfo) {
     const userId = userInfo.id
     console.log(editAttr)
-    console.log(editAttr.attrName, userInfo)
+    // console.log(editAttr.attrName, userInfo)
     if (userId < 0) {
       return sendError(errorTypes.NOT_LOGIN, ctx, "请先登陆")
     }
     if (!editAttr.attrName) {
       return sendError(errorTypes.PARAMS_ERROR, ctx, "参数错误")
     }
-
+    if (editAttr.value == '男' && editAttr.attrName == 'gender') {
+      editAttr.value = 0
+    } else if (editAttr.value == '女' && editAttr.attrName == 'gender') {
+      editAttr.value = 1
+    }
     const res = await User.update({
       [editAttr.attrName]: editAttr.value
     }, {

@@ -68,7 +68,7 @@ class TeamController {
     if (typeof res === "boolean") {
       return res
     }
-    resultUtils.successResult(ctx, res, "获取队伍信息成功")
+    resultUtils.successResult(ctx, res.safeTeamList, "获取队伍信息成功")
   }
 
   /**
@@ -181,13 +181,16 @@ class TeamController {
     if (typeof res === "boolean") {
       return res
     }
-    resultUtils.successResult(ctx, res, "我创建的队伍")
+    resultUtils.successResult(ctx, res.safeTeamList, "我创建的队伍")
   }
 
   async getMyJoinTeam(ctx: Context) {
     const userInfo = ctx.userInfo
     const res = await teamService.getMyJoinTeam(ctx, userInfo)
-    resultUtils.successResult(ctx, res, "我所在的队伍")
+    if (typeof res === "boolean") {
+      return res
+    }
+    resultUtils.successResult(ctx, res.safeTeamList, "我所在的队伍")
 
   }
   async getMatchTeam(ctx: Context) {

@@ -38,7 +38,7 @@ export const verifyAdminAuth = async (ctx: Context, next: Next) => {
   if (!adminInfo) {
     return sendError(errorTypes.NOT_LOGIN, ctx, "请先登陆")
   }
-  ctx.userInfo = adminInfo
+  ctx.adminInfo = adminInfo
   await next();
 }
 

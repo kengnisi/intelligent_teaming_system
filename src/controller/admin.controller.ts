@@ -11,6 +11,10 @@ import user from '../model/user_model';
 import { URLSearchParams } from "url"
 import paginate from '../utils/paginate';
 import { Op } from 'sequelize';
+import Team from '../model/team_model';
+import user_team from '../model/userTeam_model';
+import { sendError } from '../utils/sendError';
+import teamService from '../service/team.service';
 
 class AdminController {
 
@@ -132,5 +136,75 @@ class AdminController {
     })
     resultUtils.successResult(ctx, updateRes, "修改成功")
   }
+  async updateTeamInfo(ctx: Context) {
+    const updateInfo = ctx.request.body
+    const updateRes = await Team.update(
+      updateInfo,
+      {
+        where: {
+          // @ts-ignore
+          id: updateInfo.id
+        }
+      }
+    )
+    resultUtils.successResult(ctx, updateRes, "修改成功")
+  }
+  async deletTeam(ctx: Context) {
+    const deletTeamId = ctx.request.body["deleteId"]
+    console.log(deletTeamId[0])
+    const updateResult = await user_team.update({ isDelete: 1 }, {
+      where: {
+        teamId: {
+          [Op.in]: deletTeamId,
+        }
+      }
+    })
+    if (updateResult["affectedCount"] == 0) {
+      return sendError(errorTypes.SYSTEM_ERROR, ctx, "删除队伍关联信息错误")
+    }
+    const res = await Team.update({ isDelete: 1 }, {
+      where: {
+        id: {
+          [Op.in]: deletTeamId,
+        }
+      }
+    })
+    resultUtils.successResult(ctx, res, "删除队伍成功")
+  }
+  async searchTeam(ctx: Context) {
+    const { limit, page, searchKey } = ctx.request.body as RequestPageUser
+    const searchCondition = {
+      where: {
+        isDelete: {
+          [Op.eq]: 0
+        }
+      },
+      limit: Number(limit),
+      offset: (page - 1) * limit
+    }
+    if (!!searchKey) {
+      searchCondition.where[Op.or] = [
+        {
+          id: {
+            [Op.substring]: searchKey
+          }
+        },
+        {
+          name: {
+            [Op.substring]: searchKey
+          }
+        },
+        {
+          description: {
+            [Op.substring]: searchKey
+          }
+        }
+      ]
+    }
+    //@ts-ignore
+    const { safeTeamList, count } = await teamService.getTeamByCondition(ctx, searchCondition)
+
+    resultUtils.successResult(ctx, paginate(safeTeamList, page, count, limit))
+  }
 }
-export const { adminLogin, getCurrentAdmin, adminlogout, getAllUser, getUserListPage, deleteUser, updateUserInfo } = new AdminController
+export const { adminLogin, getCurrentAdmin, adminlogout, getAllUser, getUserListPage, deleteUser, updateUserInfo, updateTeamInfo, deletTeam, searchTeam } = new AdminController

@@ -40,5 +40,45 @@ class MessageController {
     })
     resultUtils.successResult(ctx, messageList, "获取聊天记录成功")
   }
+  async getAllPerMessage(ctx: Context) {
+    console.log(ctx.request.body)
+    const userId = ctx["userInfo"].id
+    const messageList = await parmessage.findAll({
+      where: {
+        isDelete: 0,
+        [Op.or]: [
+          {
+            acceptUserId: userId
+          },
+          {
+            sendUserId: userId
+          }
+        ]
+      }
+    })
+    const msgArr = {}
+    const mySendMessage = messageList.filter(element => {
+      const sendUserId = element.sendUserId
+      if (sendUserId != 12) {
+        msgArr[sendUserId] = !msgArr[sendUserId] ? [element] : [...msgArr[sendUserId], element]
+        return false
+      }
+      return true
+    });
+    mySendMessage.forEach(element => {
+      const acceptUserId = element.acceptUserId
+      if (!msgArr[acceptUserId]) {
+        msgArr[acceptUserId] = [element]
+      }
+      msgArr[acceptUserId].push(element)
+    })
+
+    for (const key in msgArr) {
+      msgArr[key].sort(function (msg1, msg2) {
+        return (msg1.id - msg2.id)
+      })
+    }
+    resultUtils.successResult(ctx, { msgList: msgArr }, "获取聊天记录成功")
+  }
 }
-export const { getTeamMessage, getPerMessage } = new MessageController
+export const { getTeamMessage, getPerMessage, getAllPerMessage } = new MessageController
